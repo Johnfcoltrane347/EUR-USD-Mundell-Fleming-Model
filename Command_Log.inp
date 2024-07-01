@@ -1,0 +1,66 @@
+# Log started 2024-02-15 20:43
+# Record of session commands.  Please note that this will
+# likely require editing if it is to be run as a script.
+# Initial Statistics
+setobs 4 1999:1 --time-series
+summary EURUSD_exchange_rate
+summary Interest_Rate_Diff
+summary Unemployement_Rate_Diff
+summary Inflation_Rate_Diff
+summary Treasury_Differential
+gnuplot EURUSD_exchange_rate Interest_Rate_Diff
+gnuplot EURUSD_exchange_rate Unemployement_Rate_Diff
+gnuplot EURUSD_exchange_rate Inflation_Rate_Diff
+gnuplot EURUSD_exchange_rate Treasury_Differential
+# model 1
+ols EURUSD_exchange_rate 0 Interest_Rate_Diff Unemployement_Rate_Diff \
+  Inflation_Rate_Diff
+restrict
+b[2]=0
+b[3]=0
+b[4]=0
+end restrict
+restrict
+b[2]=0
+end restrict
+restrict
+b[3]=0
+end restrict
+restrict
+b[4]=0
+end restrict
+restrict
+b[2]+b[4]=0
+end restrict
+
+#Chow F-Test
+# Log started 2024-02-15 20:52
+# Record of session commands.  Please note that this will
+# likely require editing if it is to be run as a script.
+setobs 4 1999:1 --time-series
+# model 1
+ols EURUSD_exchange_rate 0 Interest_Rate_Diff Unemployement_Rate_Diff \
+  Inflation_Rate_Diff
+
+# Log started 2024-02-15 20:53
+# Record of session commands.  Please note that this will
+# likely require editing if it is to be run as a script.
+setobs 4 2007:3 --time-series
+# model 1
+ols EURUSD_exchange_rate 0 Interest_Rate_Diff Unemployement_Rate_Diff \
+  Inflation_Rate_Diff
+  
+# model 2 (Refined)
+ols EURUSD_exchange_rate 0 Interest_Rate_Diff(-1) Inflation_Rate_Diff(-1) \
+  Treasury_Differential(-1)
+  
+# Test on refined Model
+restrict
+b[2]=0.06
+b[3]=0.044
+b[4]=-0.13
+end restrict
+restrict
+b[4]+2*b[2]+2*b[3]=0
+end restrict
+

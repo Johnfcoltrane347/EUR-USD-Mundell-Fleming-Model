@@ -1,0 +1,82 @@
+##########Auto-correlation :
+# Durbin Watson test (AR(1))
+
+numerator = sum((Residual-Lag_Residual)^2)
+denominator = sum(Residual^2)
+DW = numerator/denominator
+DW_approximated = 2 * (1-$rho) 
+
+#Correction d'auto-corrélation:
+ols EURUSD_exchange_rate const Interest_Rate_Diff(-1) Inflation_Rate_Diff(-1) Treasury_Differential(-1) Dummy_Diff_HighVolYears(-1) T_D(-1)
+rho = $rho
+
+# Generate the transformed variable for the transformed model:
+series Y_t = EURUSD_exchange_rate - rho*EURUSD_exchange_rate(-1)
+series X1_t_1 = Interest_Rate_Diff(-1) - rho*Interest_Rate_Diff(-2)
+series X2_t_1 = Inflation_Rate_Diff(-1) - rho*Inflation_Rate_Diff(-2)
+series X3_t_1 = Treasury_Differential(-1) - rho*Treasury_Differential(-2)
+series D_t_1 = Dummy_Diff_HighVolYears(-1) - rho*Dummy_Diff_HighVolYears(-2)
+series TD_t_1 = T_D(-1) - rho*T_D(-2)
+# Static GeneralizedLeast Square
+# Regression on the transformed model
+ols Y_t const X1_t_1 X2_t_1 X3_t_1 D_t_1 TD_t_1
+# GLS using Hildreth-Lu correction 
+ar1 EURUSD_exchange_rate const Interest_Rate_Diff(-1) Inflation_Rate_Diff(-1) Treasury_Differential(-1) Dummy_Diff_HighVolYears(-1) T_D(-1) --hilu --no-corc
+
+########Heteroscedasticity :
+#White test
+#Auxilliary equation 
+ols EURUSD_exchange_rate const Interest_Rate_Diff(-1) Inflation_Rate_Diff(-1) Treasury_Differential(-1) Dummy_Diff_HighVolYears(-1) T_D(-1)  
+
+Interest_Rate_Diff_squared=Interest_Rate_Diff(-1)^2
+Inflation_Rate_Diff_squared=Inflation_Rate_Diff(-1)^2
+Treasury_Differential_squared=Treasury_Differential(-1)^2
+
+SQ_Residual=$uhat^2
+
+ols SQ_Residual const Interest_Rate_Diff_squared Inflation_Rate_Diff_squared Treasury_Differential_squared Dummy_Diff_HighVolYears(-1) T_D(-1)  
+
+#godfrey quandt test :
+
+# Quick preliminary visual inspection
+gnuplot EURUSD_exchange_rate Interest_Rate_Diff(-1)
+
+# Plot residual as a function of X
+ols  const Interest_Rate_Diff(-1) Inflation_Rate_Diff(-1) Treasury_Differential(-1) Dummy_Diff_HighVolYears(-1) T_D(-1)
+gnuplot Residual X --fit=none --output=Display
+
+# 1. Goldfeld-Quandt test
+smpl 1 24 
+ols  const Interest_Rate_Diff(-1) Inflation_Rate_Diff(-1) Treasury_Differential(-1) Dummy_Diff_HighVolYears(-1) T_D(-1)
+scalar SCR1 = $ess
+scalar n1 = $nobs
+scalar ddl1 = n1 - 4
+
+
+smpl 40 65
+ols  const Interest_Rate_Diff(-1) Inflation_Rate_Diff(-1) Treasury_Differential(-1) Dummy_Diff_HighVolYears(-1) T_D(-1)
+scalar SCR2 = $ess
+scalar n2 = $nobs
+scalar ddl2 = n2 - 4
+
+F_GQ = (SCR2/ddl2)/(SCR1/ddl1)
+
+alpha = 0.05
+
+F_GQ_c = invcdf(F,ddl2,ddl1,1 - alpha)
+
+p_F_GQ = pvalue(F,ddl2,ddl1,F_GQ)
+
+#correction heteroscedasticité
+# Weighted Least Square:
+genr EURUSD=EURUSD_exchange_rate/ ((Inflation_Rate_Diff(-1))^(1/2))
+genr CT=1/ ((Inflation_Rate_Diff(-1))^(1/2))
+genr Interest(-1)= Interest_Rate_Diff(-1)/ ((Inflation_Rate_Diff(-1))^(1/2))
+genr Inflation(-1)=Inflation_Rate_Diff(-1)/ ((Inflation_Rate_Diff(-1))^(1/2))
+genr Treasury(-1)_H=Treasury_Differential(-1)/ ((Inflation_Rate_Diff(-1))^(1/2))
+genr Dummy(-1)_H=Dummy_Diff_HighVolYears(-1)/ ((Inflation_Rate_Diff(-1))^(1/2))
+genr TD(-1)=T_D(-1)/((Inflation_Rate_Diff(-1))^(1/2))
+
+ols EURUSD_exchange_rate const Interest_Rate_Diff(-1) Inflation_Rate_Diff(-1) Treasury_Differential(-1) Dummy_Diff_HighVolYears(-1) T_D(-1)  
+ols EURUSD CT Interest(-1) Inflation(-1) Treasury(-1) Dummy(-1) TD(-1)  
+
